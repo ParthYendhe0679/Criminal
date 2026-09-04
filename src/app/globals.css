@@ -1,26 +1,273 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   KRITAGAS — Controlled Glassmorphism Design System
+   ============================================================ */
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Spacing scale */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-24: 96px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  /* Ambient backdrop gradient */
+  --background: #F4F4F8;
+  --ambient-gradient: radial-gradient(at 15% 15%, rgba(91,91,214,0.06) 0px, transparent 50%),
+                      radial-gradient(at 85% 85%, rgba(16,185,129,0.04) 0px, transparent 50%);
+  --foreground: #18181B;
+
+  /* Glass Levels (Light Mode) */
+  --glass-0: rgba(255, 255, 255, 0.45);
+  --glass-1: rgba(255, 255, 255, 0.65);
+  --glass-2: rgba(255, 255, 255, 0.78);
+  --glass-3: rgba(255, 255, 255, 0.90);
+
+  /* Solid fallback surfaces */
+  --surface-0: #F4F4F8;
+  --surface-1: #FFFFFF;
+  --surface-2: #F1F1F5;
+  --surface-3: #E8E8EE;
+
+  /* Inks */
+  --ink-primary: #18181B;
+  --ink-secondary: #52525B;
+  --ink-tertiary: #A1A1AA;
+
+  /* Glass Borders */
+  --border: rgba(24, 24, 27, 0.08);
+  --border-strong: rgba(24, 24, 27, 0.16);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-border-subtle: rgba(24, 24, 27, 0.06);
+
+  /* Primary Accent: Controlled Purple (#5B5BD6) */
+  --accent: #5B5BD6;
+  --accent-light: #6E6EE8;
+  --accent-muted: rgba(91, 91, 214, 0.08);
+  --accent-subtle: rgba(91, 91, 214, 0.15);
+
+  /* Semantics */
+  --success: #16A34A;
+  --success-muted: rgba(22, 163, 74, 0.1);
+  --warning: #D97706;
+  --warning-muted: rgba(217, 119, 6, 0.1);
+  --error: #DC2626;
+  --error-muted: rgba(220, 38, 38, 0.1);
+  --info: #2563EB;
+  --info-muted: rgba(37, 99, 235, 0.1);
+
+  /* Shadows */
+  --glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --glass-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08);
+
+  /* Blur definitions */
+  --blur-glass: blur(12px);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 }
+
+/* Dark Mode Controlled Glass */
+.dark {
+  --background: #0B0B0E;
+  --ambient-gradient: radial-gradient(at 10% 10%, rgba(91,91,214,0.12) 0px, transparent 60%),
+                      radial-gradient(at 90% 90%, rgba(20,184,166,0.06) 0px, transparent 60%);
+  --foreground: #FAFAFA;
+
+  /* Dark Glass Levels */
+  --glass-0: rgba(18, 18, 22, 0.60);
+  --glass-1: rgba(24, 24, 30, 0.72);
+  --glass-2: rgba(30, 30, 38, 0.82);
+  --glass-3: rgba(38, 38, 48, 0.92);
+
+  --surface-0: #0B0B0E;
+  --surface-1: #141418;
+  --surface-2: #1B1B22;
+  --surface-3: #24242E;
+
+  --ink-primary: #FAFAFA;
+  --ink-secondary: #A1A1AA;
+  --ink-tertiary: #71717A;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+
+  --accent: #7C7CF8;
+  --accent-light: #9090FF;
+  --accent-muted: rgba(124, 124, 248, 0.12);
+  --accent-subtle: rgba(124, 124, 248, 0.20);
+
+  --glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --glass-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --glass-shadow-lg: 0 8px 36px rgba(0, 0, 0, 0.65);
+}
+
+/* ============================================================
+   Base Styles & Ambient Environment
+   ============================================================ */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  background-image: var(--ambient-gradient);
+  background-attachment: fixed;
+  color: var(--ink-primary);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Controlled Glass Utilities */
+.glass-panel {
+  background: var(--glass-1);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--glass-border-subtle);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+.glass-panel-elevated {
+  background: var(--glass-2);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--glass-shadow-md);
+}
+
+.glass-modal {
+  background: var(--glass-3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.glass-toolbar {
+  background: var(--glass-2);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border);
+  box-shadow: var(--glass-shadow-sm);
+}
+
+/* Monospace utility for IDs, hashes, timestamps */
+.font-mono-id {
+  font-family: var(--font-geist-mono), 'SF Mono', 'Cascadia Code', monospace;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-tertiary);
+}
+
+/* Selection & Focus */
+::selection {
+  background: var(--accent-subtle);
+  color: var(--ink-primary);
+}
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* Table density with glass support */
+.table-dense th,
+.table-dense td {
+  padding: 6px 12px;
+  font-size: 13px;
+  height: 36px;
+}
+
+.table-dense th {
+  font-weight: 500;
+  color: var(--ink-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  position: sticky;
+  top: 0;
+  background: var(--glass-2);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  z-index: 10;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.table-dense tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 120ms ease-out;
+}
+
+.table-dense tr:hover {
+  background: var(--accent-muted);
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 9999px;
+  letter-spacing: 0.01em;
+  line-height: 20px;
+}
+
+.badge-active { background: var(--success-muted); color: var(--success); }
+.badge-investigation { background: var(--info-muted); color: var(--info); }
+.badge-review { background: var(--warning-muted); color: var(--warning); }
+.badge-closed { background: var(--surface-2); color: var(--ink-tertiary); }
+.badge-critical { background: var(--error-muted); color: var(--error); }
+.badge-high { background: var(--warning-muted); color: var(--warning); }
+.badge-medium { background: var(--info-muted); color: var(--info); }
+.badge-low { background: var(--surface-2); color: var(--ink-secondary); }
+
+/* Pulsing radar dot for Live Stream */
+@keyframes pulse-radar {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+.live-pulse-dot {
+  animation: pulse-radar 1.8s infinite;
 }
