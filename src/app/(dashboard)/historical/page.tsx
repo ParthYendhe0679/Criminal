@@ -1,16 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/store/hooks';
 import { openInspector } from '@/store/slices/uiSlice';
 import { mockHistoricalService } from '@/services/mockServices';
 import type { HistoricalCase } from '@/types';
-import {
-  History, Search, Shield, AlertTriangle, ArrowRight,
-  Filter, Eye, CheckCircle2, ChevronRight, Layers, Sparkles
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { Search, Shield, Sparkles } from 'lucide-react';
 
 export default function HistoricalIntelligencePage() {
   const router = useRouter();
@@ -21,18 +17,27 @@ export default function HistoricalIntelligencePage() {
   const [loading, setLoading] = useState(false);
   const [selectedCase, setSelectedCase] = useState<HistoricalCase | null>(null);
 
-  useEffect(() => {
-    handleSearch('CASE-102');
-  }, []);
-
-  const handleSearch = (q: string) => {
+  const handleSearch = useCallback((q: string) => {
     setLoading(true);
     mockHistoricalService.search(q).then((data) => {
       setResults(data);
       if (data.length > 0) setSelectedCase(data[0]);
       setLoading(false);
     });
-  };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    mockHistoricalService.search('CASE-102').then((data) => {
+      if (active) {
+        setResults(data);
+        if (data.length > 0) setSelectedCase(data[0]);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const quickQueries = [
     'CASE-102 (Flagship)',

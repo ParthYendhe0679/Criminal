@@ -1,19 +1,26 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { updateComplaintStatus } from '@/store/slices/citizenPortalSlice';
 import type { ComplaintStatus } from '@/types';
 import {
-  ShieldAlert, CheckCircle2, XCircle, HelpCircle, FileText,
-  Upload, Sparkles, RefreshCw, Eye, ArrowRight, ShieldCheck,
-  FolderPlus, Clock, Check
+  CheckCircle2, XCircle, HelpCircle,
+  Upload, Sparkles, RefreshCw, FolderPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PolicePortalPage() {
   const dispatch = useAppDispatch();
   const complaints = useAppSelector((s) => s.citizenPortal.complaints);
+  const timersRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, []);
 
   const [activeTab, setActiveTab] = useState<'queue' | 'upload' | 'investigation'>('queue');
   const [selectedComplaintId, setSelectedComplaintId] = useState<string>(complaints[0]?.id || '');
@@ -73,13 +80,13 @@ export default function PolicePortalPage() {
     setUploading(true);
     setOcrStep(1);
 
-    const timer1 = setTimeout(() => setOcrStep(2), 700);
-    const timer2 = setTimeout(() => setOcrStep(3), 1400);
-    const timer3 = setTimeout(() => {
+    timersRef.current.push(setTimeout(() => setOcrStep(2), 700));
+    timersRef.current.push(setTimeout(() => setOcrStep(3), 1400));
+    timersRef.current.push(setTimeout(() => {
       setOcrStep(4);
       setUploading(false);
       toast.success(`FIR ${firNumber} scanned and ingested into KRITAGAS intelligence index.`);
-    }, 2200);
+    }, 2200));
   };
 
   return (

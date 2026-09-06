@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppDispatch } from '@/store/hooks';
 import { openInspector } from '@/store/slices/uiSlice';
 import { mockAIService } from '@/services/mockServices';
 import type { AIMessage } from '@/types';
-import {
-  Bot, User, Sparkles, Send, Shield, FolderOpen,
-  Package, CheckCircle2, ChevronRight, HelpCircle
-} from 'lucide-react';
+import { Bot, User, Sparkles, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function KRITAGASAIPage() {
@@ -31,12 +28,12 @@ export default function KRITAGASAIPage() {
 
   const suggestedQuestions = mockAIService.getSuggestedQuestions();
 
-  const handleSend = async (textToSend?: string) => {
+  const handleSend = useCallback(async (textToSend?: string) => {
     const query = textToSend || inputQuery;
     if (!query.trim() || loading) return;
 
     const userMsg: AIMessage = {
-      id: `usr-${Date.now()}`,
+      id: `usr-${Math.random().toString(36).substring(2, 9)}`,
       role: 'user',
       content: query,
       timestamp: new Date().toISOString(),
@@ -49,12 +46,12 @@ export default function KRITAGASAIPage() {
     try {
       const aiReply = await mockAIService.ask(query);
       setMessages((prev) => [...prev, aiReply]);
-    } catch (err) {
+    } catch {
       toast.error('Error generating AI analysis');
     } finally {
       setLoading(false);
     }
-  };
+  }, [inputQuery, loading]);
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });

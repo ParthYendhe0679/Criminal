@@ -4,17 +4,28 @@ import React from 'react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { closeInspector, openInspector } from '@/store/slices/uiSlice';
 import { addToWatchlist } from '@/store/slices/watchlistSlice';
+import type { EntityType } from '@/types';
 import { toast } from 'sonner';
 import {
-  X, User, FolderOpen, Car, Phone, MapPin, Building2,
-  Package, Bell, History, FlaskConical, ExternalLink, BookmarkPlus,
-  ShieldAlert, Activity
+  X, User, FolderOpen, Car, ExternalLink, BookmarkPlus,
+  ShieldAlert, Activity, Package
 } from 'lucide-react';
 import {
   people, cases, vehicles, phones, locations, organizations,
   evidence, alerts, historicalCases, forensicRecords
 } from '@/mock';
 import Link from 'next/link';
+
+interface InspectorData {
+  description?: string;
+  details?: string;
+  reason?: string;
+  caseIds?: string[];
+  personIds?: string[];
+  vehicleIds?: string[];
+  evidenceIds?: string[];
+  [key: string]: unknown;
+}
 
 export default function EntityInspector() {
   const dispatch = useAppDispatch();
@@ -27,13 +38,12 @@ export default function EntityInspector() {
   // Resolve entity data based on type
   let title = id;
   let subtitle = type;
-  let badgeColor = 'var(--accent)';
-  let dataRecord: Record<string, any> | undefined = undefined;
+  let dataRecord: InspectorData | undefined = undefined;
 
   switch (type) {
     case 'Person': {
       const p = people.find((item) => item.id === id);
-      dataRecord = p;
+      dataRecord = p as unknown as InspectorData;
       if (p) {
         title = p.name;
         subtitle = `${p.id} • ${p.role} • ${p.city}`;
@@ -42,7 +52,7 @@ export default function EntityInspector() {
     }
     case 'Case': {
       const c = cases.find((item) => item.id === id);
-      dataRecord = c;
+      dataRecord = c as unknown as InspectorData;
       if (c) {
         title = c.title;
         subtitle = `${c.id} • ${c.crime} • ${c.status}`;
@@ -51,7 +61,7 @@ export default function EntityInspector() {
     }
     case 'Vehicle': {
       const v = vehicles.find((item) => item.id === id);
-      dataRecord = v;
+      dataRecord = v as unknown as InspectorData;
       if (v) {
         title = `${v.make} ${v.model} (${v.registrationNumber})`;
         subtitle = `${v.id} • ${v.color} • ${v.type}`;
@@ -60,7 +70,7 @@ export default function EntityInspector() {
     }
     case 'Phone': {
       const ph = phones.find((item) => item.id === id);
-      dataRecord = ph;
+      dataRecord = ph as unknown as InspectorData;
       if (ph) {
         title = ph.number;
         subtitle = `${ph.id} • ${ph.carrier} • IMEI: ${ph.imei.slice(0, 8)}...`;
@@ -69,7 +79,7 @@ export default function EntityInspector() {
     }
     case 'Location': {
       const l = locations.find((item) => item.id === id);
-      dataRecord = l;
+      dataRecord = l as unknown as InspectorData;
       if (l) {
         title = l.name;
         subtitle = `${l.id} • ${l.type} • ${l.city}`;
@@ -78,7 +88,7 @@ export default function EntityInspector() {
     }
     case 'Organization': {
       const org = organizations.find((item) => item.id === id);
-      dataRecord = org;
+      dataRecord = org as unknown as InspectorData;
       if (org) {
         title = org.name;
         subtitle = `${org.id} • ${org.type} • ${org.status}`;
@@ -87,7 +97,7 @@ export default function EntityInspector() {
     }
     case 'Evidence': {
       const ev = evidence.find((item) => item.id === id);
-      dataRecord = ev;
+      dataRecord = ev as unknown as InspectorData;
       if (ev) {
         title = ev.title;
         subtitle = `${ev.id} • ${ev.type} • ${ev.status}`;
@@ -96,7 +106,7 @@ export default function EntityInspector() {
     }
     case 'Alert': {
       const al = alerts.find((item) => item.id === id);
-      dataRecord = al;
+      dataRecord = al as unknown as InspectorData;
       if (al) {
         title = al.title;
         subtitle = `${al.id} • ${al.type} • ${al.severity}`;
@@ -105,7 +115,7 @@ export default function EntityInspector() {
     }
     case 'HistoricalCase': {
       const hc = historicalCases.find((item) => item.id === id);
-      dataRecord = hc;
+      dataRecord = hc as unknown as InspectorData;
       if (hc) {
         title = hc.title;
         subtitle = `${hc.id} • ${hc.year} • Similarity: ${hc.similarity}%`;
@@ -114,7 +124,7 @@ export default function EntityInspector() {
     }
     case 'ForensicRecord': {
       const fr = forensicRecords.find((item) => item.id === id);
-      dataRecord = fr;
+      dataRecord = fr as unknown as InspectorData;
       if (fr) {
         title = `${fr.category} Analysis (${fr.id})`;
         subtitle = `Match: ${fr.matchPercentage}% • ${fr.status}`;
@@ -127,7 +137,7 @@ export default function EntityInspector() {
     dispatch(
       addToWatchlist({
         entityId: id,
-        entityType: (type as any) || 'Person',
+        entityType: (type as EntityType) || 'Person',
         entityName: title,
         reason: 'Added via Right-Side Entity Inspector',
       })
@@ -238,7 +248,7 @@ export default function EntityInspector() {
           <div className="rounded-md border divide-y overflow-hidden text-[12px]" style={{ borderColor: 'var(--border)' }}>
             {dataRecord &&
               Object.entries(dataRecord)
-                .filter(([k, v]) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
+                .filter(([, v]) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
                 .slice(0, 8)
                 .map(([key, val]) => (
                   <div key={key} className="flex justify-between px-3 py-1.5 bg-[var(--surface-1)]">
@@ -259,14 +269,14 @@ export default function EntityInspector() {
             Cross-Module Relationships
           </h4>
           <div className="space-y-1.5">
-            {dataRecord?.caseIds && dataRecord.caseIds.length > 0 && (
+            {Boolean(dataRecord?.caseIds && dataRecord.caseIds.length > 0) && (
               <div className="p-2 rounded border flex items-center justify-between text-[12px]"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-1)' }}>
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--ink-secondary)' }}>
                   <FolderOpen size={13} /> Linked Cases
                 </span>
                 <div className="flex gap-1">
-                  {dataRecord.caseIds.slice(0, 3).map((cid: string) => (
+                  {dataRecord?.caseIds?.slice(0, 3).map((cid: string) => (
                     <button
                       key={cid}
                       onClick={() => dispatch(openInspector({ id: cid, type: 'Case' }))}
@@ -279,14 +289,14 @@ export default function EntityInspector() {
               </div>
             )}
 
-            {dataRecord?.personIds && dataRecord.personIds.length > 0 && (
+            {Boolean(dataRecord?.personIds && dataRecord.personIds.length > 0) && (
               <div className="p-2 rounded border flex items-center justify-between text-[12px]"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-1)' }}>
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--ink-secondary)' }}>
                   <User size={13} /> Associated People
                 </span>
                 <div className="flex gap-1">
-                  {dataRecord.personIds.slice(0, 3).map((pid: string) => (
+                  {dataRecord?.personIds?.slice(0, 3).map((pid: string) => (
                     <button
                       key={pid}
                       onClick={() => dispatch(openInspector({ id: pid, type: 'Person' }))}
@@ -299,14 +309,14 @@ export default function EntityInspector() {
               </div>
             )}
 
-            {dataRecord?.vehicleIds && dataRecord.vehicleIds.length > 0 && (
+            {Boolean(dataRecord?.vehicleIds && dataRecord.vehicleIds.length > 0) && (
               <div className="p-2 rounded border flex items-center justify-between text-[12px]"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-1)' }}>
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--ink-secondary)' }}>
                   <Car size={13} /> Registered Vehicles
                 </span>
                 <div className="flex gap-1">
-                  {dataRecord.vehicleIds.slice(0, 2).map((vid: string) => (
+                  {dataRecord?.vehicleIds?.slice(0, 2).map((vid: string) => (
                     <button
                       key={vid}
                       onClick={() => dispatch(openInspector({ id: vid, type: 'Vehicle' }))}
@@ -319,14 +329,14 @@ export default function EntityInspector() {
               </div>
             )}
 
-            {dataRecord?.evidenceIds && dataRecord.evidenceIds.length > 0 && (
+            {Boolean(dataRecord?.evidenceIds && dataRecord.evidenceIds.length > 0) && (
               <div className="p-2 rounded border flex items-center justify-between text-[12px]"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-1)' }}>
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--ink-secondary)' }}>
                   <Package size={13} /> Evidence Items
                 </span>
                 <div className="flex gap-1">
-                  {dataRecord.evidenceIds.slice(0, 3).map((eid: string) => (
+                  {dataRecord?.evidenceIds?.slice(0, 3).map((eid: string) => (
                     <button
                       key={eid}
                       onClick={() => dispatch(openInspector({ id: eid, type: 'Evidence' }))}

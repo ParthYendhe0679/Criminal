@@ -1,39 +1,58 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { toggleSidebar } from '@/store/slices/uiSlice';
+import { toggleSidebar, setRole } from '@/store/slices/uiSlice';
+import type { UserRole } from '@/store/slices/uiSlice';
 import {
   LayoutDashboard, FolderOpen, FileText, Network, Map, History,
-  Search, Radio, Eye, ActivitySquare, Bell, Package, FlaskConical,
-  GitCompare, AlertOctagon, ShieldCheck, BrainCircuit, MapPin,
-  TrendingUp, BookmarkCheck, Clock, Play, UserCheck, ShieldAlert,
-  Bot, Settings, ChevronLeft, ChevronRight
+  Search, Radio, Eye, ActivitySquare, Bell, Package,
+  GitCompare, AlertOctagon, ShieldCheck, BrainCircuit,
+  TrendingUp, BookmarkCheck, Clock, Play,
+  Bot, Settings, ChevronLeft, ChevronRight, ChevronDown,
+  UserCircle2, ShieldAlert, Settings2, BarChart3, UserCheck,
+  AlertTriangle, FileSearch, Database, Users, Lock
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const navSections = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  pulse?: boolean;
+  badge?: string;
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+  defaultOpen?: boolean;
+}
+
+// ── Police/Investigator Navigation ─────────────────────────
+const policeNav: NavSection[] = [
   {
-    label: 'OVERVIEW',
+    label: 'Overview',
+    defaultOpen: true,
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
-    label: 'INVESTIGATION',
+    label: 'Investigation',
+    defaultOpen: true,
     items: [
       { href: '/cases', label: 'Cases', icon: FolderOpen },
       { href: '/cases/search', label: 'Case Search', icon: Search },
-      { href: '/fir', label: 'FIR Intelligence', icon: FileText },
-      { href: '/network', label: 'Network Intelligence', icon: Network },
-      { href: '/map', label: 'Map Intelligence', icon: Map },
-      { href: '/historical', label: 'Historical Intelligence', icon: History },
+      { href: '/fir', label: 'FIR Intake / Processing', icon: FileText },
     ],
   },
   {
-    label: 'MONITORING',
+    label: 'Monitoring',
+    defaultOpen: false,
     items: [
       { href: '/monitoring', label: 'Live Monitoring', icon: Radio, pulse: true },
       { href: '/sentinel', label: 'Sentinel', icon: Eye },
@@ -42,90 +61,160 @@ const navSections = [
     ],
   },
   {
-    label: 'EVIDENCE',
+    label: 'Evidence',
+    defaultOpen: false,
     items: [
       { href: '/evidence', label: 'Evidence Intelligence', icon: Package },
-      { href: '/forensics', label: 'Forensics', icon: FlaskConical },
-      { href: '/forensics?tab=correlation', label: 'Evidence Correlation', icon: GitCompare },
-      { href: '/forensics?tab=contradictions', label: 'Contradictions', icon: AlertOctagon },
-      { href: '/integrity', label: 'Evidence Integrity', icon: ShieldCheck },
+      { href: '/evidence?tab=forensics', label: 'Forensics', icon: ShieldCheck },
+      { href: '/evidence?tab=correlation', label: 'Evidence Correlation', icon: GitCompare },
+      { href: '/evidence?tab=contradictions', label: 'Contradictions', icon: AlertOctagon },
+      { href: '/evidence?tab=integrity', label: 'Evidence Integrity', icon: Database },
     ],
   },
   {
-    label: 'ANALYTICS',
+    label: 'Analytics',
+    defaultOpen: false,
     items: [
-      { href: '/predictive', label: 'Predictive Intelligence', icon: BrainCircuit },
-      { href: '/hotspots', label: 'Crime Hotspots', icon: MapPin },
-      { href: '/trends', label: 'Crime Trends', icon: TrendingUp },
+      { href: '/analytics?tab=trends', label: 'Crime Trends', icon: BarChart3 },
+      { href: '/analytics?tab=hotspots', label: 'Crime Hotspot Map', icon: Map },
+      { href: '/analytics?tab=patterns', label: 'Predictive Intelligence', icon: BrainCircuit },
     ],
   },
   {
-    label: 'OPERATIONS',
+    label: 'Intelligence',
+    defaultOpen: true,
     items: [
-      { href: '/watchlist', label: 'Watchlist', icon: BookmarkCheck },
-      { href: '/timeline', label: 'Timeline', icon: Clock },
-      { href: '/replay', label: 'Investigation Replay', icon: Play },
+      { href: '/historical', label: 'Historical Intelligence', icon: History },
+      { href: '/ai', label: 'AI Assistant / KAVA AI', icon: Bot },
     ],
   },
   {
-    label: 'PORTALS',
+    label: 'Administration',
+    defaultOpen: false,
     items: [
-      { href: '/citizen', label: 'Citizen Portal', icon: UserCheck },
-      { href: '/police', label: 'Police Portal', icon: ShieldAlert },
-    ],
-  },
-  {
-    label: 'AI',
-    items: [
-      { href: '/ai', label: 'KRITAGAS AI', icon: Bot },
-    ],
-  },
-  {
-    label: 'ADMIN',
-    items: [
-      { href: '/admin', label: 'Admin', icon: Settings },
+      { href: '/admin', label: 'Settings', icon: Settings },
     ],
   },
 ];
 
+// ── Citizen Navigation ───────────────────────────────────────
+const citizenNav: NavSection[] = [
+  {
+    label: 'My Portal',
+    defaultOpen: true,
+    items: [
+      { href: '/citizen', label: 'Overview', icon: LayoutDashboard },
+      { href: '/citizen?tab=file', label: 'File a Complaint', icon: FileText },
+      { href: '/citizen?tab=complaints', label: 'My Complaints', icon: FolderOpen },
+      { href: '/citizen?tab=notifications', label: 'Notifications', icon: Bell },
+    ],
+  },
+];
+
+// ── Admin Navigation ─────────────────────────────────────────
+const adminNav: NavSection[] = [
+  {
+    label: 'Administration',
+    defaultOpen: true,
+    items: [
+      { href: '/admin', label: 'Admin Dashboard', icon: LayoutDashboard },
+      { href: '/admin?tab=users', label: 'User Management', icon: Users },
+      { href: '/admin?tab=roles', label: 'Role Management', icon: Lock },
+      { href: '/admin?tab=audit', label: 'Audit Logs', icon: FileSearch },
+      { href: '/admin?tab=security', label: 'Security', icon: ShieldAlert },
+    ],
+  },
+];
+
+const navByRole: Record<UserRole, NavSection[]> = {
+  police: policeNav,
+  citizen: citizenNav,
+  admin: adminNav,
+};
+
+const roleMeta: Record<UserRole, { label: string; color: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = {
+  police: { label: 'Police / Investigator', color: 'var(--accent)', icon: ShieldAlert },
+  citizen: { label: 'Citizen Portal', color: '#16A34A', icon: UserCircle2 },
+  admin: { label: 'Administrator', color: '#D97706', icon: Settings2 },
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const collapsed = useAppSelector((s) => s.ui.sidebarCollapsed);
+  const currentRole = useAppSelector((s) => s.ui.currentRole);
+
+  // Collapsible section state — initialize all sections to their defaultOpen state
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    const sections = navByRole[currentRole] || policeNav;
+    sections.forEach((s) => { initial[s.label] = s.defaultOpen ?? true; });
+    return initial;
+  });
+
+  const toggleSection = (label: string) => {
+    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  const sections = navByRole[currentRole] || policeNav;
+  const meta = roleMeta[currentRole] || roleMeta.police;
+  const RoleIcon = meta.icon;
+
+  const handleRoleSwitch = (role: UserRole) => {
+    dispatch(setRole(role));
+    toast.success(`Switched to ${roleMeta[role].label}`);
+    if (role === 'citizen') router.push('/citizen');
+    else if (role === 'admin') router.push('/admin');
+    else router.push('/dashboard');
+  };
+
+  const [roleSwitcherOpen, setRoleSwitcherOpen] = useState(false);
+
+  const isActive = (href: string) => {
+    const [path, query] = href.split('?');
+    if (path === '/cases/search') return pathname === '/cases/search';
+    if (query) {
+      // For tab-based links just match the path
+      return pathname === path;
+    }
+    return pathname === href || (href !== '/dashboard' && href !== '/citizen' && href !== '/admin' && pathname?.startsWith(href));
+  };
 
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 h-full z-40 flex flex-col border-r transition-all duration-200 ease-out glass-panel',
-        collapsed ? 'w-[56px]' : 'w-[240px]'
+        'fixed left-0 top-0 h-full z-40 flex flex-col border-r transition-all duration-200 ease-out glass-panel overflow-hidden',
+        collapsed ? 'w-[68px]' : 'w-[272px]'
       )}
-      style={{
-        borderColor: 'var(--border)',
-      }}
+      style={{ borderColor: 'var(--border)' }}
     >
       {/* Brand Header */}
-      <div className="flex items-center h-[48px] px-3.5 border-b" style={{ borderColor: 'var(--border)' }}>
+      <div
+        className="flex items-center h-[60px] px-4 border-b shrink-0"
+        style={{ borderColor: 'var(--border)' }}
+      >
         {!collapsed ? (
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex items-center gap-3 w-full">
             <div
-              className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold text-white shadow-sm"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[14px] font-bold text-white shadow-md shrink-0"
               style={{ background: 'var(--accent)' }}
             >
               K
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[14px] font-bold tracking-tight" style={{ color: 'var(--ink-primary)' }}>
+            <div className="flex flex-col min-w-0">
+              <span className="text-[15px] font-bold tracking-tight leading-tight" style={{ color: 'var(--ink-primary)' }}>
                 KRITAGAS
               </span>
-              <span className="text-[9px] font-mono-id px-1 py-0.2 rounded font-semibold text-[var(--accent)] bg-[var(--accent-muted)]">
-                INTEL
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--ink-tertiary)' }}>
+                Intelligence Platform
               </span>
             </div>
           </Link>
         ) : (
           <Link href="/dashboard" className="flex items-center justify-center w-full">
             <div
-              className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold text-white shadow-sm"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[14px] font-bold text-white shadow-md"
               style={{ background: 'var(--accent)' }}
             >
               K
@@ -134,69 +223,128 @@ export default function Sidebar() {
         )}
       </div>
 
-      {/* Navigation Sections */}
-      <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
-        {navSections.map((section) => (
-          <div key={section.label} className="mb-2">
-            {!collapsed && (
-              <div
-                className="px-2 py-1 text-[10px] font-semibold tracking-wider"
-                style={{ color: 'var(--ink-tertiary)' }}
-              >
-                {section.label}
-              </div>
-            )}
-            {section.items.map((item) => {
-              const isActive =
-                item.href === '/cases/search'
-                  ? pathname === '/cases/search'
-                  : item.href.includes('?')
-                  ? pathname + (typeof window !== 'undefined' ? window.location.search : '') === item.href
-                  : pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href) && !pathname?.startsWith('/cases/search'));
-
-              const Icon = item.icon;
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  title={collapsed ? item.label : undefined}
-                  className={cn(
-                    'flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12.5px] font-medium transition-all duration-120 relative',
-                    collapsed && 'justify-center px-0',
-                    isActive
-                      ? 'text-[var(--accent)] font-semibold shadow-sm'
-                      : 'text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--glass-1)]'
-                  )}
-                  style={
-                    isActive
-                      ? {
-                          background: 'var(--glass-2)',
-                          border: '1px solid var(--accent-subtle)',
-                        }
-                      : {}
-                  }
-                >
-                  <Icon size={15} strokeWidth={isActive ? 2 : 1.6} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                  {item.pulse && !collapsed && (
-                    <span className="ml-auto w-2 h-2 rounded-full bg-[var(--success)] live-pulse-dot" />
-                  )}
-                </Link>
-              );
-            })}
+      {/* Role Badge */}
+      {!collapsed && (
+        <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+          <div
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-medium cursor-pointer hover:opacity-90 transition-opacity"
+            style={{ background: `${meta.color}14`, color: meta.color }}
+            onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
+          >
+            <RoleIcon size={14} />
+            <span className="flex-1 truncate">{meta.label}</span>
+            <ChevronDown size={12} className={cn('transition-transform', roleSwitcherOpen && 'rotate-180')} />
           </div>
-        ))}
+          {roleSwitcherOpen && (
+            <div className="mt-1.5 space-y-1 animate-fade-in">
+              {(Object.keys(roleMeta) as UserRole[]).filter(r => r !== currentRole).map(r => {
+                const RM = roleMeta[r];
+                const RI = RM.icon;
+                return (
+                  <button
+                    key={r}
+                    onClick={() => { handleRoleSwitch(r); setRoleSwitcherOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors hover:bg-[var(--surface-2)]"
+                    style={{ color: 'var(--ink-secondary)' }}
+                  >
+                    <RI size={13} />
+                    <span>{RM.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+        {sections.map((section) => {
+          const isOpen = openSections[section.label] !== false;
+          return (
+            <div key={section.label} className="mb-1">
+              {/* Section header */}
+              {!collapsed && (
+                <button
+                  onClick={() => toggleSection(section.label)}
+                  className="w-full flex items-center justify-between px-2 py-1.5 text-[10.5px] font-bold uppercase tracking-wider rounded-md transition-colors hover:bg-[var(--surface-2)]"
+                  style={{ color: 'var(--ink-tertiary)' }}
+                >
+                  {section.label}
+                  <ChevronDown size={11} className={cn('transition-transform', !isOpen && '-rotate-90')} />
+                </button>
+              )}
+
+              {/* Nav items */}
+              {(isOpen || collapsed) && section.items.map((item) => {
+                const active = isActive(item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] font-medium transition-all duration-100 relative',
+                      collapsed && 'justify-center px-0',
+                      active
+                        ? 'font-semibold'
+                        : 'text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:bg-[var(--glass-1)]'
+                    )}
+                    style={
+                      active
+                        ? {
+                            color: 'var(--accent)',
+                            background: 'var(--accent-muted)',
+                            border: '1px solid var(--accent-subtle)',
+                          }
+                        : {}
+                    }
+                  >
+                    <Icon size={16} strokeWidth={active ? 2.2 : 1.7} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                    {item.pulse && !collapsed && (
+                      <span className="ml-auto w-2 h-2 rounded-full bg-[var(--success)] live-pulse-dot shrink-0" />
+                    )}
+                    {item.badge && !collapsed && (
+                      <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--error)] text-white shrink-0">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })}
       </nav>
 
-      {/* Collapse Toggle */}
-      <div className="p-2 border-t" style={{ borderColor: 'var(--border)' }}>
+      {/* Footer */}
+      <div className="border-t p-2 space-y-1 shrink-0" style={{ borderColor: 'var(--border)' }}>
+        {/* Collapse Toggle */}
         <button
           onClick={() => dispatch(toggleSidebar())}
-          className="flex items-center justify-center w-full py-1.5 rounded-md text-[var(--ink-tertiary)] hover:text-[var(--ink-primary)] hover:bg-[var(--surface-2)] transition-colors"
+          className="flex items-center justify-center w-full py-2 rounded-lg text-[var(--ink-tertiary)] hover:text-[var(--ink-primary)] hover:bg-[var(--surface-2)] transition-colors"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
+          {collapsed ? <ChevronRight size={16} /> : (
+            <span className="flex items-center gap-2 text-[12px] font-medium">
+              <ChevronLeft size={16} />
+              Collapse
+            </span>
+          )}
         </button>
+
+        {/* Switch to Login */}
+        {!collapsed && (
+          <button
+            onClick={() => router.push('/login')}
+            className="w-full text-[12px] text-center py-1.5 rounded-lg transition-colors hover:bg-[var(--surface-2)]"
+            style={{ color: 'var(--ink-tertiary)' }}
+          >
+            Switch Portal
+          </button>
+        )}
       </div>
     </aside>
   );

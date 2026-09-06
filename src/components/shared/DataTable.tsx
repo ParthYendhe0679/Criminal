@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-  ArrowUpDown, ArrowUp, ArrowDown, Eye, CheckSquare, Square
+  ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square
 } from 'lucide-react';
 
 export interface ColumnDef<T> {
@@ -28,7 +28,7 @@ interface DataTableProps<T> {
   }[];
 }
 
-export default function DataTable<T extends Record<string, any>>({
+export default function DataTable<T extends object>({
   data,
   columns,
   keyExtractor,
@@ -42,16 +42,13 @@ export default function DataTable<T extends Record<string, any>>({
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
-  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
-    new Set(columns.map((c) => c.key))
-  );
 
   // Sorting
   const sortedData = useMemo(() => {
     if (!sortKey) return data;
     return [...data].sort((a, b) => {
-      const valA = a[sortKey];
-      const valB = b[sortKey];
+      const valA = (a as Record<string, unknown>)[sortKey];
+      const valB = (b as Record<string, unknown>)[sortKey];
       if (valA === valB) return 0;
       if (valA === undefined || valA === null) return 1;
       if (valB === undefined || valB === null) return -1;
@@ -100,7 +97,7 @@ export default function DataTable<T extends Record<string, any>>({
     setSelectedKeys(next);
   };
 
-  const activeColumns = columns.filter((col) => visibleColumns.has(col.key));
+  const activeColumns = columns;
 
   return (
     <div className="flex flex-col rounded-lg border overflow-hidden" style={{ background: 'var(--surface-1)', borderColor: 'var(--border)' }}>
@@ -221,7 +218,7 @@ export default function DataTable<T extends Record<string, any>>({
                     </td>
                     {activeColumns.map((col) => (
                       <td key={col.key}>
-                        {col.render ? col.render(item) : String(item[col.key] ?? '')}
+                        {col.render ? col.render(item) : String((item as Record<string, unknown>)[col.key] ?? '')}
                       </td>
                     ))}
                   </tr>

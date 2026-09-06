@@ -21,7 +21,7 @@ const actionItems = [
   { label: 'Ask KRITAGAS AI', icon: Bot, action: '/ai' },
 ];
 
-const typeIcons: Record<string, any> = {
+const typeIcons: Record<string, React.ElementType> = {
   Case: FolderOpen, Person: User, Vehicle: Car, Evidence: Package,
   Organization: Building2, Location: MapPin, FIR: FileText,
 };
@@ -51,19 +51,31 @@ export default function CommandPalette() {
 
   // Search
   useEffect(() => {
+    let active = true;
     if (query.length >= 2) {
       mockSearchService.search(query).then(r => {
-        setResults(r);
-        setSelectedIndex(0);
+        if (active) {
+          setResults(r);
+          setSelectedIndex(0);
+        }
       });
-    } else {
+    }
+    return () => {
+      active = false;
+    };
+  }, [query]);
+
+  const handleQueryChange = (newQuery: string) => {
+    setQuery(newQuery);
+    if (newQuery.length < 2) {
       setResults([]);
     }
-  }, [query]);
+  };
 
   const navigate = useCallback((path: string) => {
     dispatch(setCommandPaletteOpen(false));
     setQuery('');
+    setResults([]);
     router.push(path);
   }, [dispatch, router]);
 
@@ -114,7 +126,7 @@ export default function CommandPalette() {
           <input
             type="text"
             value={query}
-            onChange={e => setQuery(e.target.value)}
+            onChange={e => handleQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search cases, people, evidence... or type a command"
             autoFocus

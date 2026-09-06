@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { timelineEvents, networkNodes, locations, evidence } from '@/mock';
 import {
   Play, Pause, SkipBack, SkipForward, RotateCcw, Clock,
-  Network, MapPin, Package, Shield, Activity, ChevronRight
+  Network, MapPin, Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -15,12 +15,12 @@ export default function InvestigationReplayPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x, 2x
 
-  const currentEvent = caseEvents[currentIndex] || caseEvents[0];
+  const currentEvent = caseEvents[currentIndex] || caseEvents[0] || null;
 
   // Linked elements for current step
-  const matchedNode = networkNodes.find((n) => n.id === currentEvent.entityId) || networkNodes[0];
-  const matchedLocation = locations.find((l) => l.id === currentEvent.entityId || l.id === 'LOC-087') || locations[0];
-  const matchedEvidence = evidence.find((e) => e.id === currentEvent.entityId || e.id === 'EVIDENCE-044') || evidence[0];
+  const matchedNode = networkNodes.find((n) => currentEvent && n.id === currentEvent.entityId) || networkNodes[0];
+  const matchedLocation = locations.find((l) => (currentEvent && l.id === currentEvent.entityId) || l.id === 'LOC-087') || locations[0];
+  const matchedEvidence = evidence.find((e) => (currentEvent && e.id === currentEvent.entityId) || e.id === 'EVIDENCE-044') || evidence[0];
 
   // Playback timer effect
   useEffect(() => {
@@ -129,7 +129,7 @@ export default function InvestigationReplayPage() {
         <div className="flex items-center justify-between text-[11px] font-mono-id">
           <span style={{ color: 'var(--ink-tertiary)' }}>15-AUG 09:32 (Complaint)</span>
           <span className="font-bold text-[var(--accent)] text-[12px]">
-            {currentEvent.timestamp.replace('T', ' ')} IST
+            {currentEvent ? currentEvent.timestamp.replace('T', ' ') : '—'} IST
           </span>
           <span style={{ color: 'var(--ink-tertiary)' }}>03-SEP 12:00 (Checkpoint)</span>
         </div>
